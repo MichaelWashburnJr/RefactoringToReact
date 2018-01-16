@@ -450,6 +450,254 @@ Now the App will render, fetch the list of people, save the people to the app st
 Sometimes, managing application state becomes too complex. This project is not a good example of one that benefits from using Redux. See the article ["You Might Not Need Redux"](https://medium.com/@dan_abramov/you-might-not-need-redux-be46360cf367)
 to figure out if you should use it or not.
 
+#### Step 1: Installing Redux
+For this project, we're going to install Redux, Thunk, and the ObjectAssign package.
 
+Thunk allows us to return promises from Redux actions, which makes handling AJAX requests in actions much easier. 
 
+ObjectAssign is a tool for cloning JavaScript objects. In Redux, all state is supposed to be immutable. therefore, whenever you change 
+state, you copy the old one, then make changes. ObjectAssign just makes the copying part easier.
 
+```
+npm install --save redux react-redux redux-thunk object-assign
+```
+
+#### Step 2: Add Redux Actions
+In Redux, you dispatch actions to modify state. Currently in our App component, we make an API request and save the results in the
+component state. Using Redux, we could make an action to perform the API request, then save the result in the Redux store.
+
+This makes it easy to share state between different components.
+
+First, create a new file at `src/constants/actionTypes.js`. In here, we'll define constants to represent the types of actions being
+dispatched.
+
+Add the following to the file to be used later when we receive people from the API.
+```
+//actionTypes.js
+export const RECEIVE_PEOPLE = 'RECEIVE_PEOPLE';
+```
+
+Now, create a new file to put all the actions for handling people in the app. Call it `src/actions/peopleActions.js`. In this file,
+we'll define two functions:
+
+- `fetchPeople`: This function can be called from components to make an API call
+- `receivePeople`: This function will create an action to be dispatched to the Redux store
+
+```
+import * as types from '../constants/actionTypes';
+
+// this function creates an action that can be dispatched to the store.
+// later on, this action will be observed by a reducer, which will use
+// the data in the action to change state in the Redux store.
+function receivePeople(json) {
+  return {
+    type: types.RECEIVE_PEOPLE,
+    people: json.results
+  };
+}
+
+// this is an asynchronous action. it can be called from components to
+// make an API request. After a response is received, the receivePeople
+// action is dispatched with the API data.
+export function fetchPeople() {
+  return dispatch => {
+    console.log("Fetching");
+    fetch('https://randomuser.me/api/?results=10')
+      .then(response => { console.log('RECEIVED');return response; })
+      .then(response => response.json())
+      .then(json => dispatch(receivePeople(json)));
+  };
+}
+```
+
+#### Step 3: Create Reducers
+Reducers listen for actions and change the current state of the Redux store. We need to create a `peopleReducer`, a `rootReducer`, and
+an `initialState` (so our application has initialized data to start).
+
+First, create a file named `src/reducers/initialState.js`. Generally, you'll want to create a section of your state for each reducer, so
+we'll put a `people` key in the state. Within that section of the state, we know we'll need to store a list of people, so we'll include 
+that as well.
+```
+//initialState.js
+export default {
+  people: {
+    peopleList: []
+  }
+};
+```
+
+Now, create the `peopleReducer`, which we'll have listen for `RECEIVE_PEOPLE` actions and update the `people` part of the state.
+
+```
+// import objectAssign for easy object duplication
+import objectAssign from 'object-assign';
+// only import the action types we want to listen to
+import {RECEIVE_PEOPLE} from '../constants/actionTypes';
+// we'll also need the initialState data we just defined
+import initialState from './initialState';
+
+// the peopleReducer accepts the last state and an action. This function is
+// called for every action dispatched.
+export default function peopleReducer(state = initialState.people, action) {
+  let newState;
+
+  switch (action.type) {
+
+    // only update the state if it's the correct action type
+    case RECEIVE_PEOPLE:
+      newState = objectAssign({}, state); // duplicate the old state
+      newState.peopleList = action.people;// save the results from the action 
+      break;
+
+    default:// by default just return the last state
+      newState = state;
+  }
+
+  return newState;
+}
+```
+
+Finally, we can create a `rootReducer`. Once we start adding multiple reducers, we can join them together here.
+
+```
+import { combineReducers } from 'redux';
+// import all the reducers you want to use
+import people from './peopleReducer';
+
+const rootReducer = combineReducers({
+  // then include them in this list
+  people,
+});
+
+export default rootReducer;// export the reducer so it can be used in the main.js file
+```
+
+#### Step 4: Configure the Redux Store
+We now have actions and reducers defined, but we still need to create a redux store before we can use actions in our components.
+
+To do this, we'll need to edit our `main.js` file.
+First, add the following imports:
+```
+import { Provider } from 'react-redux'
+import {createStore, compose, applyMiddleware} from 'redux';
+import thunk from 'redux-thunk';
+// import the rootReducer we just made
+import rootReducer from './reducers';
+```
+
+Then, initialize the Redux store with our reducers. We'll also have to configure the store with the thunk middleware to allow our
+asynchronous actions to be made.
+```
+// middleware is executed after actions are dispatched and before they're passed to reducers.
+// thunk waits for promises returned by actions to resolve and allows them to dispatch new actions.
+const middlewares = [thunk];
+// create a new store with the reducers we have
+let store = createStore(rootReducer, {}, compose(
+  applyMiddleware(...middlewares)
+));
+```
+
+Now, in the render function we need to wrap our `App` component with a provider which manages the store. This is as simple as changing
+this:
+```
+render(
+  <App/>,
+  document.getElementById('app')
+);
+```
+To this:
+```
+render(
+  <Provider store={store}>
+    <App/>
+  </Provider>,
+  document.getElementById('app')
+);
+```
+The application now has a Redux store configured and is fully capable of dispatching different actions.
+
+#### Step 5: Calling Actions from Components
+Now that we have actions and reducers setup, we can call an action in our App component to fetch people from the API instead of
+making the request and handling the state internally.
+
+Since we will be handling the state in the Redux store instead of the `App` component state, we can remove our constructor from the 
+`App.js` class.
+```
+...
+export default class App extends React.Component {
+
+  //// state.people is now managed in the redux store so we don't need this
+  // constructor(props) {
+  //   super(props);
+  //   this.state = {
+  //     people: []
+  //   };
+  // }
+  ...
+}
+```
+
+Before we can dispatch actions from a component, we need to define a mechanism for binding components to the Redux store. We can do
+this using the `bindActionCreators` and `connect` functions.
+
+Add the following imports at the top of the `App.js` file:
+```
+import {bindActionCreators} from 'redux';
+import { connect } from 'react-redux';
+// also import our actions
+import * as peopleActions from '../actions/peopleActions';
+...
+```
+Remove the `export default` from in front of the class declaration. We need to first define functions to map Redux state to
+the component and Redux actions to the component. After we connect the component class to these functions, we can export it.
+```
+class App extends React.Component {
+  ...
+}
+
+/* 
+maps redux state to component props so that when inside the component, you can
+use this.props.people to get state.people.peopleList */
+const mapStateToProps = state => {
+  return {
+    people: state.people.peopleList,
+  };
+}
+
+/*
+binds Redux actions to the store and component. Components will now
+be able to call fetchPeople like so: this.props.peopleActions.fetchPeople() */
+const mapDispatchToProps = dispatch => {
+  return {
+    peopleActions: bindActionCreators(peopleActions, dispatch)
+  };
+}
+
+// connect the React component to the Redux store using the two functions above
+export default connect(mapStateToProps, mapDispatchToProps)(App);
+```
+
+The App component is now connected to the Redux store. It can access state from the store and dispatch actions.
+
+The last thing we need to do is refactor the component logic to dispatch the `fetchPeople` action, and pass the `PeopleTable` the state.
+```
+class App extends React.Component {
+
+  componentDidMount() {
+    // fetch the people from the API. When the state being mapped to this
+    // component changes, it will trigger a re-render
+    this.props.peopleActions.fetchPeople();
+  }
+  
+  render() {
+    return (// pass the PeopleTable this.props.people instead of the old this.state.people now
+      <div className="container">
+        <PeopleTable people={this.props.people}/>
+      </div>
+    );
+  }
+  
+}
+```
+Now we have a fully functioning web app using React and Redux. The final result is in the [Part 4 folder](./part-4-redux/). A snapshot 
+of the project exists after each part if you look in the source of this repository.
