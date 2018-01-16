@@ -325,3 +325,131 @@ render(
 ```
 That's all! The project should now build successfully and run without errors.
 
+### Part 3: Pure React
+Now that we have React working, and a React component wrapping our entire app, it's easy to build smaller components to replace
+any JQuery being used.
+
+#### Step 1: Create a PeopleTable Component
+First, we're going to make a new component just for rendering the table in our website. Create a new file
+`src/components/PeopleTable.js`.
+
+Inside the `render` function, return all the HTML for the `<table>` which is currently returned in the `App` component.
+```
+import React from 'react';
+
+export default class PeopleTable extends React.Component {
+
+  render() {
+    return (
+      <table className="table">...</table>
+    );
+  }
+  
+}
+```
+Now, where in JQuery we would insert people into our table by building a new `<tr>` as a string and inserting it into the DOM,
+in React we can just create a list of JSX elements and include it in the JSX being returned.
+```
+export default class PeopleTable extends React.Component {
+
+  render(){
+  
+    // assume a list of people is being passed to this component via props
+    const people = this.props.people;
+    
+    // build a list of JSX elements for the people to render rows
+    const rows = people.map((person, index) => {
+      return (
+        <tr key={index}>
+          <td>{people.name.first} {people.name.last}</td>
+          <td>{person.dob}</td>
+          <td>{person.email}</td>
+          <td>{person.phone}</td>
+          <td>{person.cell}</td>
+        </tr>
+      );// this would be cleaner if this were another component entirely (e.g. <PersonRow person={person}/>)
+    });
+    
+    return (// include the rows we built in the table body using the {...} syntax
+      <table>
+        ...
+        <tbody>{rows}</tbody>
+      </table>
+    );
+  }
+}
+```
+Now we have a fully functioning `PeopleTable` component. It expects one prop: `people`. If done correctly, this should be able
+to be used in another component's `render` method like so: `<PeopleTable people={[p1, p2, p3]}/>`.
+
+#### Step 2: Make the App Component Render the PeopleTable Component
+Now that the `PeopleTable` component is available, we need to refactor the `App` component to render it instead of doing the
+work itself.
+
+First, remove the `updateTableWithPeople` and `insertPersonIntoTable` methods. Instead of calling `fetchPeople` and inserting the
+results into the table with JQuery, we're going to save the results to our component's [state](https://reactjs.org/docs/state-and-lifecycle.html) and pass the state into the `PeopleTable`.
+
+To do this, first initialize the state in the component's constructor method.
+```
+export default class App extends React.Component {
+  
+  constructor(props) {
+    super(props);
+    
+    this.state = {
+      people: [],
+    }; 
+  }
+  
+  ...
+}
+```
+
+Changes to the component state trigger a re-render. Thus, once our API request returns results, the render function will fire with
+the updated state.
+
+Now, move the API request into the `componentDidMount` method, and change it to use the `fetch()` method instead of JQuery. We'll
+also need to update it to use the `setState` method to save the results once they're returned.
+
+```
+export default class App extends React.Component {
+  ...
+  componentDidMount() {
+    fetch('https://randomuser.me/api/?results=10')
+      .then(response => response.json())// needs to parse the JSON first
+      .then(json => {
+        // now save the results to the state
+        this.setState({people: json.results});
+      });
+  }
+  ...
+}
+```
+
+Finally, we can make the `render` method return the `PeopleTable` with the component state.
+
+```
+// don't forget to import the PeopleTable Component
+import PeopleTable from './PeopleTable';
+
+export default class App extends React.Component {
+  ...
+  render() {
+    return (
+      <div className="container">
+        <h1>Contact Information for Random People</h1>
+        <PeopleTable people={this.state.people}/>
+      </div>
+    );
+  }
+}
+```
+Now the App will render, fetch the list of people, save the people to the app state, and re-render.
+
+### Part 4: Introducing Redux
+Sometimes, managing application state becomes too complex. This project is not a good example of one that benefits from using Redux. See the article ["You Might Not Need Redux"](https://medium.com/@dan_abramov/you-might-not-need-redux-be46360cf367)
+to figure out if you should use it or not.
+
+
+
+
