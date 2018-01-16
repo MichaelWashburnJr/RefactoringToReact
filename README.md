@@ -169,22 +169,33 @@ var SRC_DIR = path.join(__dirname, 'src');
 
 // these values get made public to anything importing this file
 module.exports = {
-  // Defines the top-most javascript file so the bundler knows where to start
+  // defines the entry point so the bundler knows where to start
   entry: './src/main.js',
-  // The final javascript bundle will be put here
+  // designates where the JS bundle is saved
   output: { path: BUILD_DIR, filename: 'bundle.js' },
-  // webpack has plugins that can be used to build other types of files
+  // handles the copying of the Index.html file to the build dir
   plugins: [
-    // this plugin will take the src/index.html file, add a reference to the bundle.js, and copy it to the dist/ folder.
     new HtmlWebpackPlugin({
       hash: true,
       filename: 'index.html',
       template: SRC_DIR + '/index.html'
     }),
   ],
-  // this is how the webpack-dev-server is configured. 
+  // handles compilation of JSX
+  module: {
+    loaders: [
+      {
+        test: /.jsx?$/,
+        loader: 'babel-loader',
+        exclude: /node_modules/,
+        query: {
+          presets: ['es2015', 'react']
+        }
+      },
+    ]
+  },
+  // tells the webpack-dev-server to serve content from the build directory
   devServer: {
-    // this tells the webpack-dev-server to serve content from the build directory
     contentBase: BUILD_DIR,
   },
 };
