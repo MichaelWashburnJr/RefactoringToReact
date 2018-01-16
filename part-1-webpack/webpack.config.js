@@ -15,20 +15,19 @@ module.exports = {
       template: SRC_DIR + '/index.html'
     }),
   ],
+  module: {
+    loaders: [
+      {
+        test: /.jsx?$/,
+        loader: 'babel-loader',
+        exclude: /node_modules/,
+        query: {
+          presets: ['es2015', 'react']
+        }
+      },
+    ]
+  },
   devServer: {
     contentBase: BUILD_DIR,
   },
 };
-  // }
-  // module: {
-  //   loaders: [
-  //     {
-  //       test: /.jsx?$/,
-  //       loader: 'babel-loader',
-  //       exclude: /node_modules/,
-  //       query: {
-  //         presets: ['es2015', 'react']
-  //       }
-  //     },
-  //   ]
-  // },
