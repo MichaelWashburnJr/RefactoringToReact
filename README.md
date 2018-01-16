@@ -87,6 +87,11 @@ to produce the smallest possible bundle of HTML/JS/CSS/Images
 ## Refactoring Steps
 These steps assume you are using the project in [Part 0](./part-0-jquery/).
 
+- [Part 1: Building with Webpack and Babel](#part-1-building-with-webpack-and-babel)
+- [Part 2: Wrapping Your App With A React Component](#part-2-wrapping-your-app-with-a-react-component)
+- [Part 3: Pure React](#part-3-pure-react)
+- [Part 4: Introducing Redux](#part-4-introducing-redux)
+
 ### Part 1: Building with Webpack and Babel
 
 #### Step 1: Install Node
