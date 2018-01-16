@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Include bootstrap just to make things a little pretty -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.js"></script>
+    <!-- Include JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <!-- The bundle.js is included automatically now -->
+    <!-- <script src="bundle.js"></script> -->
+
+  </head>
+  <body><!-- Define DOM elements here -->
+
+    <div class="container">
+
+      <h1>Contact Information for Random People</h1>
+
+      <table id="person-table" class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>DOB</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Cell</th>
+          </tr>
+        </thead>
+
+        <!-- People will be inserted into this element -->
+        <tbody id="people-table-body"></tbody>
+
+      </table>
+
+    </div>
+
+  </body>
+</html>
