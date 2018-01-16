@@ -85,9 +85,9 @@ Webpack is a package bundler. It can be used on its own or with build systems li
 to produce the smallest possible bundle of HTML/JS/CSS/Images
 
 ## Refactoring Steps
+These steps assume you are using the project in [Part 0](./part-0-jquery/).
 
 ### Part 1: Building with Webpack and Babel
-This part assumes you are using the project in [Part 0](./part-0-jquery/).
 
 #### Step 1: Install Node
 Node.js can be downloaded and installed [here](https://nodejs.org/en/). Node.js is simply a JavaScript runtime environment.
@@ -198,3 +198,130 @@ Now, if we run `npm run build`, the project will be built using webpack. Additio
 be build and served on `localhost`.
 
 The project should now build. It should now work exactly as the source does in the [part-1-webpack folder](./part-1-webpack/).
+
+#### Remove main.js from index.html
+In the base project, there is a line in the `index.html` file like this:
+```
+<script src="main.js"></script>
+```
+This can now be deleted. Webpack will automatically include our `bundle.js` file at the bottom of the `index.html`.
+
+### Part 2: Wrapping your App with a React Component
+In this part we're going to wrap the application logic in a large react component. This will make it easier to start building smaller React components in the next step.
+
+#### Step 1: Install React
+For this part, we'll need to install React and ReactDOM.
+```
+npm install --save react react-dom
+```
+
+#### Step 2: Create a React Component
+Create a new file `src/components/App.js`. This will be the top-most component in our app.
+
+Import React and create a new component.
+```
+// import react. equivalent to `var React = require('react');`
+import React from 'react';
+
+export default class App extends React.Component {
+
+}
+```
+Cut and Paste the `updateTableWithPeople`, `insertPersonIntoTable`, and `fetchPeople` functions into the class. Note the slight changes that need to be made when moving JavaScript functions into a React component.
+```
+export default class App extends React.Component {
+
+  //CHANGED: Needed to add this. before function call
+  updateTableWithPeople(people) {
+    people.forEach(this.insertPersonIntoTable);
+  }
+
+  // no changes here
+  insertPersonIntoTable(person) {
+    $("#people-table-body").append(
+      "<tr>" +
+        "<td>" + person.name.first + ' ' + person.name.last + '</td>' +
+        "<td>" + person.dob + '</td>' +
+        "<td>" + person.email + '</td>' +
+        "<td>" + person.phone + '</td>' +
+        "<td>" + person.cell + '</td>' +
+      "</tr>"
+    );
+  }
+
+  //CHANGED: Needed to add this. before function call and use an
+  // arrow function. This lets you keep the same scope as the calling function.
+  // In this case, it means "this" still refers to the parent class. 
+  fetchPeople() {
+    $.get('https://randomuser.me/api/?results=10',
+      // use () => { ... } instead of function() { ... }
+      // to keep the same scope as the parent function.
+      // this lets us still use the "this." keyword
+      // within the callback function.
+      (response) => {
+        this.updateTableWithPeople(response.results);
+      }
+    );
+  }
+
+}
+```
+Now, instead of just calling `fetchPeople()` at the end of the JavaScript file as was done in Part 0, we can call this function in
+the `componentDidMount` function. This way, it's only called after all the HTML has initially been rendered, preventing any errors if the document isn't ready to be manipulated.
+```
+export default class App extends React.Component {
+  ...
+  componentDidMount(){
+    this.fetchPeople();
+  }
+}
+```
+Lastly, in our `render()` function we can add all the HTML from the body in our `index.html` file. 
+
+Cut everything inside the `<body>` tags of the `index.html` and paste it into the render function like so:
+```
+export default class App extends React.Component {
+  ...
+  render() {
+    return (
+      <div className="container">
+        <h1>Contact Information for Random People</h1>
+        ...
+      </div>
+    );
+  }
+}
+```
+Notice that the `class` attributes are now `className`. This is a quirk of using JSX.
+
+Now we have a complete React component. But we still need to render it.
+
+#### Step 3: Render the Component
+
+In order to render the component we just made, we'll have to modify the `index.html` and `main.js` files to insert the component into
+the `<body>`. 
+
+First, update the `index.html` `<body>` to look like so:
+```
+<body>
+  <div id="app"/>
+</body>
+```
+Now, we're going to make the `main.js` file render the component we defined on the element where the id is `app`.
+
+All the previous code inside `main.js` can be deleted if you haven't aleady. Then, add the following:
+```
+// import react and the render function which comes from react-dom
+import React from 'react';
+import { render } from 'react-dom';
+// import the App wrapper component we just defined
+import App from './components/App';
+
+// call the render function so that <App/> is rendered on the element with the ID "app"
+render(
+  <App/>,
+  document.getElementById('app')
+);
+```
+That's all! The project should now build successfully and run without errors.
+
